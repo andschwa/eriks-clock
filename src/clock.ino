@@ -15,9 +15,11 @@
   Leonardo Digital #3, #2
   Mega Digital #2, #3, #21, #20, #19, #18
   attachInterrupt(interrupt, function, mode) i.e. not the pin number
+
  */
 
 // Includes
+#include <limits.h>
 #include <Wire.h>
 
 #include "Adafruit_LEDBackpack.h"
@@ -29,35 +31,41 @@ Adafruit_7segment matrix = Adafruit_7segment();
 
 const int interrupt = 0;
 
+const int sample_size = 60;
+const int perfect_sample_mean = 1000;
+
 const int wait = 1000;
 const int serial_rate = 9600;
 
-const uint8_t brightness = 12;
+const uint8_t brightness = 15;
 const int display_address = 0x77;
-
-const int millis_in_minute = 60000;
 
 // Globals :(
 
-unsigned long new_time = 0;
-unsigned long old_time = 0;
-unsigned long period = 0;
-double bpm = 0.0;
-double avg = 0.0;
+volatile unsigned long prior_time = 0;
+
+volatile unsigned long sample = 0;
+volatile unsigned long sample_times[sample_size];
+volatile int sample_index = 0;
+
+volatile unsigned long cumulative_average = 0;
+volatile unsigned long cumulative_index = 0;
 
 // Prototypes
 void display_setup();
 void display_double(double num);
 void swing_ISR();
+unsigned long get_sample_total();
+unsigned long get_rolling_average();
 
 // Main code
 
 void display_setup() {
   Serial.print("Display setup\n");
-  /* matrix.setBrightness(brightness); */
-  /* Serial.print("Past brightness\n"); */
+  matrix.setBrightness(brightness);
+  Serial.print("Past brightness\n");
   matrix.begin(display_address);
-  Serial.print("Past bein\n");
+  Serial.print("Past begin\n");
 }
 
 void display_double(double num) {
@@ -72,25 +80,47 @@ void display_double(double num) {
 }
 
 void swing_ISR() {
-  new_time = millis();
-  period = (new_time - old_time) / 2;
-  old_time = new_time;
-  bpm = double(millis_in_minute) / double(period);
+  sample = millis() - prior_time;
+  prior_time = millis();  // millis doesn't change in an ISR
+
+  sample_times[sample_index] = sample;
+  sample_index = sample_index++ % sample_size;
+
+  cumulative_average = (cumulative_average + sample) / cumulative_index++;
+  cumulative_index = cumulative_index++ % ULONG_MAX;
+
   Serial.print("Interrupted\n");
+}
+
+unsigned long get_sample_total() {
+  unsigned long total = 0;
+  for (int i = 0; i < sample_size; i++) total += sample_times[i];
+}
+
+unsigned long get_rolling_average() {
+  return get_sample_total() / sample_size;
 }
 
 void setup() {
   Serial.begin(serial_rate);
   Serial.print("Setup\n");
+
   display_setup();
   Serial.print("Past display setup\n");
+
   attachInterrupt(interrupt, swing_ISR, FALLING);
   Serial.print("Interrupt attached\n");
+
+  for (sample_index;
+	 sample_index < sample_size;
+	 sample_index = sample_index++ % sample_size) {
+    sample_times[sample_index] = perfect_sample_mean;
+  }
+  Serial.print("Samplings initialized to 0\n");
 }
 
 void loop() {
-  Serial.print("Loop\n");
-  bpm = 12.34;
-  display_double(bpm);
+  Serial.print("Display measured length of a minute\n");
+  display_double(double(get_sample_total()) / 1000);
   delay(wait);
 }
