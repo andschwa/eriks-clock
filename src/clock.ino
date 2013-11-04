@@ -19,7 +19,6 @@
  */
 
 // Includes
-#include <limits.h>
 #include <Wire.h>
 
 #include "Adafruit_LEDBackpack.h"
@@ -31,7 +30,7 @@ Adafruit_7segment matrix = Adafruit_7segment();
 
 const int interrupt = 0;
 
-const int sample_size = 60;
+const int sample_size = 120;
 
 const int wait = 1200;
 const int serial_rate = 9600;
@@ -51,6 +50,7 @@ volatile unsigned long cumulative_average = 0;
 volatile unsigned long cumulative_index = 0;
 
 // Prototypes
+
 void display_setup();
 void display_double(double num);
 void swing_ISR();
@@ -60,15 +60,12 @@ unsigned long get_rolling_average();
 // Main code
 
 void display_setup() {
-  Serial.print("Display setup\n");
-  matrix.setBrightness(brightness);
-  Serial.print("Past brightness\n");
+  /* matrix.setBrightness(brightness); */
+  /* Serial.print("Past brightness\n"); */
   matrix.begin(display_address);
-  Serial.print("Past begin\n");
 }
 
 void display_double(double num) {
-  Serial.print("Displaying double\n");
   int expanded = int(100*num);  // Get first four digits into an int
   matrix.writeDigitNum(0, (expanded / 1000) % 10, false);
   matrix.writeDigitNum(1, (expanded / 100) % 10, true);  // Draw dot
@@ -84,22 +81,18 @@ void swing_ISR() {
   // millis will, however, overflow and reset to 0 in 49.7103 days
 
   sample_times[sample_index] = sample;
-  sample_index = sample_index++ % sample_size;
-
-  if (cumulative_index == ULONG_MAX) cumulative_average = 0;
-  // Every 136.102 years this will overflow and necessitate resetting
-  // the cumulative average
+  sample_index = (sample_index + 1) % sample_size;
 
   cumulative_average = (((cumulative_index * cumulative_average) + sample) /
-			cumulative_index++);
+			cumulative_index + 1);
   cumulative_index += 1;
-
-  Serial.print("Interrupted\n");
 }
 
 unsigned long get_sample_total() {
   unsigned long total = 0;
-  for (int i = 0; i < sample_size; i++) total += sample_times[i];
+  for (int i = 0; i < sample_size; i++) {
+    total += sample_times[i];
+  }
   return total;
 }
 
@@ -109,25 +102,18 @@ unsigned long get_rolling_average() {
 }
 
 void setup() {
-  Serial.begin(serial_rate);
-  Serial.print("Setup\n");
-
   display_setup();
-  Serial.print("Past display setup\n");
 
   attachInterrupt(interrupt, swing_ISR, FALLING);
-  Serial.print("Interrupt attached\n");
 
-  for (sample_index;
-	 sample_index < sample_size;
-	 sample_index = sample_index++ % sample_size) {
-    sample_times[sample_index] = 0;
+  for (int i = 0; i < sample_size; i++) {
+    sample_times[i] = 0;
   }
-  Serial.print("Samplings initialized to 0\n");
+
+  delay(wait);
 }
 
 void loop() {
-  Serial.print("Display measured length of a minute\n");
-  display_double(double(get_sample_total()) / 1000);
-  delay(wait);
+  double bpm = 60000 / double(get_rolling_average());
+  display_double(bpm);
 }
