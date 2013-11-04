@@ -82,12 +82,18 @@ void display_double(double num) {
 void swing_ISR() {
   sample = millis() - prior_time;
   prior_time = millis();  // millis doesn't change in an ISR
+  // millis will, however, overflow and reset to 0 in 49.7103 days
 
   sample_times[sample_index] = sample;
   sample_index = sample_index++ % sample_size;
 
-  cumulative_average = (cumulative_average + sample) / cumulative_index++;
-  cumulative_index = cumulative_index++ % ULONG_MAX;
+  if (cumulative_index == ULONG_MAX) cumulative_average = 0;
+  // Every 136.102 years this will overflow and necessitate resetting
+  // the cumulative average
+
+  cumulative_average = (((cumulative_index * cumulative_average) + sample) /
+			cumulative_index++);
+  cumulative_index += 1;
 
   Serial.print("Interrupted\n");
 }
