@@ -25,10 +25,6 @@
 
 Adafruit_7segment matrix = Adafruit_7segment();
 
-// millis counter
-extern volatile unsigned long timer0_overflow_count;
-const unsigned long reset_time = 86400000;
-
 // Constants
 
 const int interrupt = 0;
@@ -94,10 +90,6 @@ void setup() {
 
 void loop() {
   Serial.print("Loop\n");
-  if (new_time > reset_time) {
-    Serial.print("Timer reset\n");
-    timer0_overflow_count = 0;  // Reset periodically
-  }
   bpm = 12.34;
   display_double(bpm);
   delay(wait);
