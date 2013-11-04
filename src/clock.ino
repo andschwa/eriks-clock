@@ -4,6 +4,11 @@
 
   File: clock.ino
   Author: Andrew Schwartzmeyer
+
+  I2C CLK, DAT
+  UNO Analog #5, #4
+  Leonardo Digital #3, #2
+  Mega Digital #21, #20
  */
 
 // Includes
@@ -22,7 +27,6 @@ const unsigned long reset_time = 86400000;
 
 const int wait = 1000;
 const int serial_rate = 9600;
-const int minute_millis = 60000;
 
 const uint8_t brightness = 12;
 const int display_address = 0x77;
@@ -30,6 +34,10 @@ const int display_address = 0x77;
 const int interrupt_pin = 2;
 volatile int pin_state = LOW;
 volatile int state = LOW;
+
+const int millis_in_minute = 60000;
+
+// Globals :(
 
 unsigned long new_time = 0;
 unsigned long old_time = 0;
@@ -43,6 +51,7 @@ void display_double(double num);
 void pendulum_interrupt_call();
 
 // Main code
+
 void display_setup() {
   Serial.print("Display setup\n");
   /* matrix.setBrightness(brightness); */
@@ -66,7 +75,7 @@ void pendulum_interrupt_call() {
   new_time = millis();
   period = (new_time - old_time) / 2;
   old_time = new_time;
-  bpm = double(minute_millis) / double(period);
+  bpm = double(millis_in_minute) / double(period);
   Serial.print("Interrupted\n");
 }
 
