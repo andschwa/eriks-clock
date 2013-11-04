@@ -32,7 +32,6 @@ Adafruit_7segment matrix = Adafruit_7segment();
 const int interrupt = 0;
 
 const int sample_size = 60;
-const int perfect_sample_mean = 1000;
 
 const int wait = 1000;
 const int serial_rate = 9600;
@@ -104,7 +103,8 @@ unsigned long get_sample_total() {
 }
 
 unsigned long get_rolling_average() {
-  return get_sample_total() / sample_size;
+  return get_sample_total() / ((cumulative_index < sample_size)
+			       ? cumulative_index : sample_size);
 }
 
 void setup() {
@@ -120,7 +120,7 @@ void setup() {
   for (sample_index;
 	 sample_index < sample_size;
 	 sample_index = sample_index++ % sample_size) {
-    sample_times[sample_index] = perfect_sample_mean;
+    sample_times[sample_index] = 0;
   }
   Serial.print("Samplings initialized to 0\n");
 }
