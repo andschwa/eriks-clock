@@ -33,11 +33,11 @@ const int interrupt = 0;
 
 const int sample_size = 60;
 
-const int wait = 1000;
+const int wait = 1200;
 const int serial_rate = 9600;
 
 const uint8_t brightness = 15;
-const int display_address = 0x77;
+const int display_address = 0x70;
 
 // Globals :(
 
@@ -100,11 +100,12 @@ void swing_ISR() {
 unsigned long get_sample_total() {
   unsigned long total = 0;
   for (int i = 0; i < sample_size; i++) total += sample_times[i];
+  return total;
 }
 
 unsigned long get_rolling_average() {
-  return get_sample_total() / ((cumulative_index < sample_size)
-			       ? cumulative_index : sample_size);
+  return (get_sample_total() / ((cumulative_index < sample_size)
+			       ? cumulative_index : sample_size));
 }
 
 void setup() {
