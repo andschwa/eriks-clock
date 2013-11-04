@@ -30,7 +30,7 @@ Adafruit_7segment matrix = Adafruit_7segment();
 
 const int interrupt = 0;
 
-const int sample_size = 120;
+const int sample_size = 72;
 
 const int wait = 1200;
 const int serial_rate = 9600;
@@ -115,5 +115,5 @@ void setup() {
 
 void loop() {
   double bpm = 60000 / double(get_rolling_average());
-  display_double(bpm);
+  display_double(2 * bpm);
 }
