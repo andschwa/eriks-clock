@@ -4,3 +4,6 @@
 [submodule "lib/Adafruit_LEDBackpack"]
 	path = lib/Adafruit_LEDBackpack
 	url = git@github.com:adafruit/Adafruit-LED-Backpack-Library.git
+[submodule "lib/Adafruit_NeoPixel"]
+	path = lib/Adafruit_NeoPixel
+	url = git@github.com:adafruit/Adafruit_NeoPixel.git
