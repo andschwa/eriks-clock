@@ -19,7 +19,8 @@
  */
 
 /* Defines */
-#define SERIAL
+#define PHOTOCELL
+#define DEBUG
 
 /* Includes */
 #include <Wire.h>
@@ -29,16 +30,16 @@
 #include "Adafruit_NeoPixel.h"
 
 /* Constants */
-const int INTERRUPT = 0;
-
+const int LIGHT_THRESHOLD = 512;
 const int SAMPLE_SIZE = 60;
-
+const int INTERRUPT = 0;
 const uint8_t BRIGHTNESS = 15;
 const int DISPLAY_ADDRESS = 0x70;  /* I2C */
 const int PRINT_DELAY = 2000;
 
 /* Pins */
 const int LEDSTRIP_PIN = 6;  /* digital */
+const int PHOTOCELL_PIN = 3;  /* analog */
 
 /* LED strip */
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(60, LEDSTRIP_PIN, NEO_GRB + NEO_KHZ800);
@@ -47,7 +48,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(60, LEDSTRIP_PIN, NEO_GRB + NEO_KHZ8
 Adafruit_7segment matrix = Adafruit_7segment();
 
 /* Globals */
-
+int photocell_reading = 0;
 unsigned long print_time = 0;
 
 volatile unsigned long prior_time = 0;
@@ -69,11 +70,6 @@ unsigned long get_rolling_average();
 
 /* Main code */
 
-void display_setup() {
-  matrix.setBrightness(BRIGHTNESS);
-  matrix.begin(DISPLAY_ADDRESS);
-}
-
 void display_double(double num) {
   int expanded = int(100 * num);  /* Get first four digits into an int */
   matrix.writeDigitNum(0, (expanded / 1000) % 10, false);
@@ -86,7 +82,7 @@ void display_double(double num) {
 
 void swing_ISR() {
   sample = millis() - prior_time;
-#ifdef SERIAL
+#ifdef DEBUG
   Serial.println(sample);
 #endif
   if (sample < 500) return;
@@ -122,15 +118,15 @@ void colorWipe(uint32_t c, uint8_t wait) {
 }
 
 void setup() {
-#ifdef SERIAL
+#ifdef DEBUG
   Serial.begin(9600);
 #endif
-  display_setup();
+  matrix.setBrightness(BRIGHTNESS);
+  matrix.begin(DISPLAY_ADDRESS);
+  strip.begin();
+  strip.show();
 
   attachInterrupt(INTERRUPT, swing_ISR, FALLING);
-
-  strip.begin();
-  colorWipe(strip.Color(255, 255, 255), 60);
 
   for (int i = 0; i < SAMPLE_SIZE; i++) sample_times[i] = 0;
 
@@ -139,6 +135,20 @@ void setup() {
 }
 
 void loop() {
+#ifdef PHOTOCELL
+  photocell_reading = analogRead(PHOTOCELL_PIN);
+#ifdef DEBUG
+  Serial.print("Analog reading = ");
+  Serial.println(photocell_reading);
+#endif
+
+  if (photocell_reading < LIGHT_THRESHOLD) {
+    colorWipe(strip.Color(255, 255, 255), 60);
+  } else {
+    colorWipe(strip.Color(0, 0, 0), 60);
+  }
+#endif
+
   if (millis() > print_time) {
     double bpm = 60000 / (double)get_rolling_average();
     print_time = millis() + PRINT_DELAY;
