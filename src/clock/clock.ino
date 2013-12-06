@@ -4,6 +4,7 @@
 
   File: clock.ino
   Author: Andrew Schwartzmeyer
+          Erik Illum
 
   I2C CLK, DAT
   UNO Analog #5, #4
@@ -19,7 +20,7 @@
  */
 
 /* Defines */
-#define PHOTOCELL
+//#define PHOTOCELL
 #define DEBUG
 
 /* Includes */
@@ -30,16 +31,16 @@
 #include "Adafruit_NeoPixel.h"
 
 /* Constants */
-const int LIGHT_THRESHOLD = 512;
+const int LIGHT_THRESHOLD = 400;
 const int SAMPLE_SIZE = 60;
-const int INTERRUPT = 0;
+const int INTERRUPT = 7;
 const uint8_t BRIGHTNESS = 15;
 const int DISPLAY_ADDRESS = 0x70;  /* I2C */
 const int PRINT_DELAY = 2000;
 
 /* Pins */
 const int LEDSTRIP_PIN = 6;  /* digital */
-const int PHOTOCELL_PIN = 3;  /* analog */
+const int PHOTOCELL_PIN = A3;  /* analog */
 
 /* LED strip */
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(60, LEDSTRIP_PIN, NEO_GRB + NEO_KHZ800);
@@ -121,7 +122,6 @@ void setup() {
 #ifdef DEBUG
   Serial.begin(9600);
 #endif
-  matrix.setBrightness(BRIGHTNESS);
   matrix.begin(DISPLAY_ADDRESS);
   strip.begin();
   strip.show();
@@ -135,19 +135,19 @@ void setup() {
 }
 
 void loop() {
-#ifdef PHOTOCELL
+//#ifdef PHOTOCELL
   photocell_reading = analogRead(PHOTOCELL_PIN);
 #ifdef DEBUG
   Serial.print("Analog reading = ");
   Serial.println(photocell_reading);
 #endif
 
-  if (photocell_reading < LIGHT_THRESHOLD) {
+//  if (photocell_reading < LIGHT_THRESHOLD) {
     colorWipe(strip.Color(255, 255, 255), 60);
-  } else {
-    colorWipe(strip.Color(0, 0, 0), 60);
-  }
-#endif
+//  } else {
+//    colorWipe(strip.Color(0, 0, 0), 60);
+//  }
+//#endif
 
   if (millis() > print_time) {
     double bpm = 60000 / (double)get_rolling_average();
