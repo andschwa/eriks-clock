@@ -16,11 +16,17 @@
   Leonardo Digital #3, #2
   Mega Digital #2, #3, #21, #20, #19, #18
   attachInterrupt(interrupt, function, mode) i.e. not the pin number
+  http://arduino.cc/en/Reference/AttachInterrupt
+
+Board	int.0	int.1	int.2	int.3	int.4	int.5
+Uno, Ethernet	2	3	 	 	 	 
+Mega2560	2	3	21	20	19	18
+Leonardo	3	2	0	1	7	 
+Due	(see below)
 
  */
 
 /* Defines */
-//#define PHOTOCELL
 #define DEBUG
 
 /* Includes */
@@ -31,16 +37,19 @@
 #include "Adafruit_NeoPixel.h"
 
 /* Constants */
+#ifdef PHOTOCELL
 const int LIGHT_THRESHOLD = 400;
+#endif PHOTOCELL
 const int SAMPLE_SIZE = 60;
-const int INTERRUPT = 7;
-const uint8_t BRIGHTNESS = 15;
+const int INTERRUPT = 4;
 const int DISPLAY_ADDRESS = 0x70;  /* I2C */
 const int PRINT_DELAY = 2000;
 
 /* Pins */
 const int LEDSTRIP_PIN = 6;  /* digital */
+#ifdef PHOTOCELL
 const int PHOTOCELL_PIN = A3;  /* analog */
+#endif
 
 /* LED strip */
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(60, LEDSTRIP_PIN, NEO_GRB + NEO_KHZ800);
@@ -49,7 +58,9 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(60, LEDSTRIP_PIN, NEO_GRB + NEO_KHZ8
 Adafruit_7segment matrix = Adafruit_7segment();
 
 /* Globals */
+#ifdef PHOTOCELL
 int photocell_reading = 0;
+#endif
 unsigned long print_time = 0;
 
 volatile unsigned long prior_time = 0;
@@ -125,6 +136,9 @@ void setup() {
   matrix.begin(DISPLAY_ADDRESS);
   strip.begin();
   strip.show();
+#ifndef PHOTOCELL
+  colorWipe(strip.Color(255, 255, 255), 60);
+#endif
 
   attachInterrupt(INTERRUPT, swing_ISR, FALLING);
 
@@ -135,19 +149,19 @@ void setup() {
 }
 
 void loop() {
-//#ifdef PHOTOCELL
+#ifdef PHOTOCELL
   photocell_reading = analogRead(PHOTOCELL_PIN);
 #ifdef DEBUG
   Serial.print("Analog reading = ");
   Serial.println(photocell_reading);
 #endif
 
-//  if (photocell_reading < LIGHT_THRESHOLD) {
+  if (photocell_reading < LIGHT_THRESHOLD) {
     colorWipe(strip.Color(255, 255, 255), 60);
-//  } else {
-//    colorWipe(strip.Color(0, 0, 0), 60);
-//  }
-//#endif
+  } else {
+    colorWipe(strip.Color(0, 0, 0), 60);
+  }
+#endif
 
   if (millis() > print_time) {
     double bpm = 60000 / (double)get_rolling_average();
